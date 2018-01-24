@@ -1,0 +1,24 @@
+extends layout
+
+mixin thumbnail(photo)
+  div.thumbnail(style='width:180px; height:120px; padding:10px 10px 30px 10px;')
+    img(src= 'https://s3.ap-south-1.amazonaws.com/'+ options.Bucket + '/' + photo.Key)
+    h4.image-caption= (photo.Key).replace(options.Prefix, '')
+
+
+block content
+  h1= title
+
+  div(style='border-left:6px solid #2196F3; background-color:#ddffff; padding:0.01em 16px;')
+    div(style='margin-top:18px;')
+    form(action='/upload', method='post', enctype='multipart/form-data')
+      input(type='file', name='photo', accept='image/*')
+      div(style='margin-top:8px;')
+      input(type='submit', value='Upload File To AWS S3', style='border-style:outset; border-radius:6px; background-color:rgba(0,0,255,0.2); font-weight:500')
+    div(style='margin-bottom:18px;')
+
+  div(style='margin-top:25px;')
+
+  div(style='display:flex; flex-flow:row wrap')
+    for photo in photos
+      +thumbnail(photo)
