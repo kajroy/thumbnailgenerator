@@ -6,12 +6,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
 var index = require('./routes/index');
-
-var store = require('./utils/store');
-var convertor = require('./utils/convertor');
-var _ = require('lodash');
-var async = require('async');
-var schedule = require('node-schedule');
+const scheduler = require('./utils/scheduler');
 
 var app = express();
 
@@ -26,48 +21,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-
-schedule.scheduleJob('*/1 * * * *', function(){
-  store.listAllItems('original', [], null, function(err, data) {
-    if (err) {
-      console.error(err);
-    } else {
-      _.forEach(data, function(photo){
-        async.waterfall([
-          function download(next) {
-            store.getItem(photo, next);
-          },
-          function process(response, next) {
-            convertor.createThumbnail(photo, response.Body,
-              function(err, buffer) {
-                if (err) {
-                  next(err);
-                } else {
-                  next(null, response.ContentType, buffer);
-                }
-              }
-            );
-          },
-          function upload(contentType, data, next) {
-            store.putItem(photo, contentType, data, next);
-          },
-          function move2backup(response, next) {
-            store.copyItem(photo, next);
-          },
-          function remove(response, next) {
-            store.deleteItem(photo, next);
-          }
-        ], function(err, result) {
-          if (err) {
-            console.error(err);
-          } else {
-            console.log('Done');
-          }
-        });
-      });
-    }
-  });
-});
 
 app.use('/', index);
 
@@ -88,5 +41,7 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+scheduler.start();
 
 module.exports = app;
